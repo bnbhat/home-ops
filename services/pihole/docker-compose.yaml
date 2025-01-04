@@ -1,0 +1,35 @@
+# More info at https://github.com/pi-hole/docker-pi-hole/ and https://docs.pi-hole.net/
+services:
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+    environment:
+      TZ: 'Europe/Berlin'
+      WEBPASSWORD: ${HOMELAB_PASSWORD}
+    volumes:
+      - '../../data/pihole/etc/pihole:/etc/pihole'
+      - '../../data/pihole/etc/dnsmasq.d:/etc/dnsmasq.d'
+    labels:
+      - "traefik.enable=true"
+
+      - "traefik.http.routers.pihole.rule=Host(`pihole.homelab.bnbhat.com`)"
+      - "traefik.http.routers.pihole.entrypoints=web"
+      - "traefik.http.routers.pihole.middlewares=pihole-https-redirect"
+      - "traefik.http.middlewares.pihole-https-redirect.redirectscheme.scheme=https"
+
+      - "traefik.http.routers.pihole-secure.rule=Host(`pihole.homelab.bnbhat.com`)"
+      - "traefik.http.routers.pihole-secure.entrypoints=websecure"
+      - "traefik.http.routers.pihole-secure.tls=true"
+      - "traefik.http.routers.pihole-secure.tls.certresolver=digitalocean"
+
+      - "traefik.http.services.pihole.loadbalancer.server.port=80"
+
+    networks:
+      - frontend
+    restart: unless-stopped
+networks:
+  frontend:
+    external: true

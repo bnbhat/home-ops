@@ -1,0 +1,31 @@
+services:
+  esphome:
+    container_name: esphome
+    image: ghcr.io/esphome/esphome
+    volumes:
+      - ../../config/esphome:/config
+      - /etc/localtime:/etc/localtime:ro
+
+    restart: unless-stopped
+    privileged: true
+    network_mode: host
+    environment:
+      - USERNAME=${HOMELAB_USER}
+      - PASSWORD=${HOMELAB_PASSWORD}
+      #- ESPHOME_DASHBOARD_USE_PING=true
+      - ESPHOME_DASHBOARD_USE_ENCRYPTION=true
+      - VIRTUAL_HOST=esphome.homelab.bnbhat.com
+    labels:
+      - "traefik.enable=true"
+
+      - "traefik.http.routers.esphome.rule=Host(`esphome.homelab.bnbhat.com`)"
+      - "traefik.http.routers.esphome.entrypoints=web"
+      - "traefik.http.routers.esphome.middlewares=esphome-https-redirect"
+      - "traefik.http.middlewares.esphome-https-redirect.redirectscheme.scheme=https"
+
+      - "traefik.http.routers.esphome-secure.rule=Host(`esphome.homelab.bnbhat.com`)"
+      - "traefik.http.routers.esphome-secure.entrypoints=websecure"
+      - "traefik.http.routers.esphome-secure.tls=true"
+      - "traefik.http.routers.esphome-secure.tls.certresolver=digitalocean"
+
+      - "traefik.http.services.esphome.loadbalancer.server.port=6052"

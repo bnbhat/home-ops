@@ -1,0 +1,41 @@
+---
+services:
+  reverse-proxy:
+    image: docker.io/library/traefik:v3.2.3
+    container_name: reverse-proxy
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /run/docker.sock:/run/docker.sock:ro
+      - ../../config/traefik/traefik.yaml:/etc/traefik/traefik.yaml:ro
+      - ../../data/traefik/certs/:/var/traefik/certs/:rw
+      - ../../config/traefik/conf.d/:/etc/traefik/conf.d/:ro
+    environment:
+      - DO_AUTH_TOKEN=${DO_AUTH_TOKEN}
+      - TRAEFIK_DASHBOARD_CREDENTIALS=${TRAEFIK_DASHBOARD_CREDENTIALS}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.entrypoints=web"
+      - "traefik.http.routers.traefik.rule=Host(`traefik-dashboard.homelab.bnbhat.com`)"
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_DASHBOARD_CREDENTIALS}"
+      - "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.routers.traefik.middlewares=traefik-https-redirect"
+      - "traefik.http.routers.traefik-secure.entrypoints=websecure"
+      - "traefik.http.routers.traefik-secure.rule=Host(`traefik-dashboard.homelab.bnbhat.com`)"
+      - "traefik.http.routers.traefik-secure.middlewares=traefik-auth"
+      - "traefik.http.routers.traefik-secure.tls=true"
+      - "traefik.http.routers.traefik-secure.tls.certresolver=digitalocean"
+      - "traefik.http.routers.traefik-secure.tls.domains[0].main=de.bnbhat.com"
+      - "traefik.http.routers.traefik-secure.tls.domains[0].sans=*.homelab.bnbhat.com"
+      - "traefik.http.routers.traefik-secure.service=api@internal"
+    networks:
+      - frontend
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+networks:
+  frontend:
+    external: true
+  

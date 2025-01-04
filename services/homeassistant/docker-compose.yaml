@@ -1,0 +1,25 @@
+services:
+  homeassistant:
+    container_name: homeassistant
+    image: "ghcr.io/home-assistant/home-assistant:stable"
+    volumes:
+      - ../../config/homeassistant:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro
+    restart: unless-stopped
+    privileged: true
+    network_mode: host
+    labels:
+      - "traefik.enable=true"
+
+      - "traefik.http.routers.homeassistant.rule=Host(`homeassistant.homelab.bnbhat.com`)"
+      - "traefik.http.routers.homeassistant.entrypoints=web"
+      - "traefik.http.routers.homeassistant.middlewares=homeassistant-https-redirect"
+      - "traefik.http.middlewares.homeassistant-https-redirect.redirectscheme.scheme=https"
+
+      - "traefik.http.routers.homeassistant-secure.rule=Host(`homeassistant.homelab.bnbhat.com`)"
+      - "traefik.http.routers.homeassistant-secure.entrypoints=websecure"
+      - "traefik.http.routers.homeassistant-secure.tls=true"
+      - "traefik.http.routers.homeassistant-secure.tls.certresolver=digitalocean"
+      - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
+
